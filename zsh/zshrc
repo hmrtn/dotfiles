@@ -1,8 +1,10 @@
+# Auto-start tmux if conditions are met
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
   exec tmux
 fi
 
+# Load Rust cargo environment
+source "$HOME/.cargo/env"
 
+# Add RISC0 to PATH
 export PATH="$PATH:/Users/hans/.risc0/bin"
-
-
