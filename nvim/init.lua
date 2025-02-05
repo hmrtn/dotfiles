@@ -1,11 +1,9 @@
 print("Welcome, Hans.")
 
 -- Set <space> as the leader key
---  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
@@ -13,8 +11,6 @@ vim.g.have_nerd_font = true
 
 -- Make line numbers default
 vim.opt.number = true
--- You can also add relative line numbers, to help with jumping.
---  Experiment for yourself to see if you like it!
 -- vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
@@ -24,8 +20,6 @@ vim.opt.mouse = "a"
 vim.opt.showmode = false
 
 -- Sync clipboard between OS and Neovim.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
 vim.opt.clipboard = "unnamedplus"
 
 -- Enable break indent
@@ -68,6 +62,69 @@ vim.opt.scrolloff = 10
 vim.opt.hlsearch = true
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
 
+vim.cmd([[
+  highlight DiagnosticError guifg=#db4b4b
+  highlight DiagnosticWarn guifg=#e0af68
+  highlight DiagnosticInfo guifg=#0db9d7
+  highlight DiagnosticHint guifg=#1abc9c
+  
+  highlight DiagnosticUnderlineError gui=undercurl guisp=#db4b4b
+  highlight DiagnosticUnderlineWarn gui=undercurl guisp=#e0af68
+  highlight DiagnosticUnderlineInfo gui=undercurl guisp=#0db9d7
+  highlight DiagnosticUnderlineHint gui=undercurl guisp=#1abc9c
+
+  sign define DiagnosticSignError text=● texthl=DiagnosticSignError
+  sign define DiagnosticSignWarn text=● texthl=DiagnosticSignWarn
+  sign define DiagnosticSignInfo text=● texthl=DiagnosticSignInfo
+  sign define DiagnosticSignHint text=● texthl=DiagnosticSignHint
+]])
+
+vim.diagnostic.config({
+	-- Show virtual text under the line
+	-- virtual_text = false,
+	virtual_text = {
+		severity = vim.diagnostic.severity.ERROR,
+		spacing = 4,
+		prefix = "✗",
+	},
+	-- Use a floating window for viewing diagnostics
+	float = {
+		source = true, -- Show source in diagnostic popup
+		border = "single",
+		header = "",
+		prefix = "",
+	},
+	-- Enable signs in the gutter
+	signs = true,
+	-- Enable underline of diagnostics
+	underline = true,
+	-- Update diagnostics in insert mode
+	update_in_insert = false,
+	-- Sort diagnostics by severity
+	severity_sort = true,
+})
+
+-- Show diagnostics automatically when you hold the cursor
+vim.o.updatetime = 200 -- Faster cursor hold time (default is 4000ms)
+vim.api.nvim_create_autocmd("CursorHold", {
+	group = vim.api.nvim_create_augroup("float_diagnostic", { clear = true }),
+	callback = function()
+		vim.diagnostic.open_float(nil, {
+			focus = false,
+			scope = "cursor",
+		})
+	end,
+})
+
+-- Toggle inline diagnostics
+vim.keymap.set("n", "<leader>td", function()
+	local current = vim.diagnostic.config().virtual_text
+	vim.diagnostic.config({
+		virtual_text = not current,
+	})
+	require("trouble").toggle()
+end, { desc = "Toggle diagnostics and Trouble" })
+
 -- Diagnostic keymaps
 vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous [D]iagnostic message" })
 vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next [D]iagnostic message" })
@@ -93,7 +150,6 @@ vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper win
 --  See `:help lua-guide-autocommands`
 
 -- Highlight when yanking text
---  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd("TextYankPost", {
 	desc = "Highlight when yanking (copying) text",
 	group = vim.api.nvim_create_augroup("kickstart-highlight-yank", { clear = true }),
@@ -137,30 +193,6 @@ require("lazy").setup({
 	-- "gc" to comment visual regions/lines
 	{ "numToStr/Comment.nvim", opts = {} },
 
-	-- Which Key - pending keybinds.
-	{
-		"folke/which-key.nvim",
-		event = "VimEnter", -- Sets the loading event to 'VimEnter'
-		config = function() -- This is the function that runs, AFTER loading
-			require("which-key").setup()
-
-			-- Document existing key chains
-			require("which-key").register({
-				["<leader>c"] = { name = "[C]ode", _ = "which_key_ignore" },
-				["<leader>d"] = { name = "[D]ocument", _ = "which_key_ignore" },
-				["<leader>r"] = { name = "[R]ename", _ = "which_key_ignore" },
-				["<leader>s"] = { name = "[S]earch", _ = "which_key_ignore" },
-				["<leader>w"] = { name = "[W]orkspace", _ = "which_key_ignore" },
-				["<leader>t"] = { name = "[T]oggle", _ = "which_key_ignore" },
-				["<leader>h"] = { name = "Git [H]unk", _ = "which_key_ignore" },
-			})
-			-- visual mode
-			require("which-key").register({
-				["<leader>h"] = { "Git [H]unk" },
-			}, { mode = "v" })
-		end,
-	},
-
 	-- Fuzzy Finder (files, lsp, etc)
 	{
 		"nvim-telescope/telescope.nvim",
@@ -176,6 +208,7 @@ require("lazy").setup({
 				end,
 			},
 			{ "nvim-telescope/telescope-ui-select.nvim" },
+			{ "nvim-telescope/telescope-file-browser.nvim" },
 
 			-- Useful for getting pretty icons, but requires a Nerd Font.
 			{ "nvim-tree/nvim-web-devicons", enabled = vim.g.have_nerd_font },
@@ -228,6 +261,7 @@ require("lazy").setup({
 			vim.keymap.set("n", "<leader>sn", function()
 				builtin.find_files({ cwd = vim.fn.stdpath("config") })
 			end, { desc = "[S]earch [N]eovim files" })
+			vim.keymap.set("n", "<leader>ex", ":Telescope file_browser<CR>")
 		end,
 	},
 
@@ -343,7 +377,6 @@ require("lazy").setup({
 				gopls = {},
 				pyright = {},
 				rust_analyzer = {},
-				tsserver = {},
 
 				lua_ls = {
 					settings = {
@@ -434,10 +467,13 @@ require("lazy").setup({
 			"saadparwaiz1/cmp_luasnip",
 
 			-- Adds other completion capabilities.
-			--  nvim-cmp does not ship with all sources by default. They are split
-			--  into multiple repos for maintenance purposes.
 			"hrsh7th/cmp-nvim-lsp",
 			"hrsh7th/cmp-path",
+			"hrsh7th/cmp-nvim-lua",
+			"hrsh7th/cmp-nvim-lsp-signature-help",
+			"hrsh7th/cmp-vsnip",
+			"hrsh7th/cmp-buffer",
+			"hrsh7th/vim-vsnip",
 		},
 		config = function()
 			-- See `:help cmp`
@@ -448,76 +484,64 @@ require("lazy").setup({
 			cmp.setup({
 				snippet = {
 					expand = function(args)
-						luasnip.lsp_expand(args.body)
+						vim.fn["vsnip#anonymous"](args.body)
 					end,
 				},
-				completion = { completeopt = "menu,menuone,noinsert" },
-
-				-- For an understanding of why these mappings were
-				-- chosen, you will need to read `:help ins-completion`
-				--
-				-- No, but seriously. Please read `:help ins-completion`, it is really good!
-				mapping = cmp.mapping.preset.insert({
-					-- Select the [n]ext item
-					["<C-n>"] = cmp.mapping.select_next_item(),
-					-- Select the [p]revious item
+				mapping = {
 					["<C-p>"] = cmp.mapping.select_prev_item(),
-
-					-- Scroll the documentation window [b]ack / [f]orward
-					["<C-b>"] = cmp.mapping.scroll_docs(-4),
+					["<C-n>"] = cmp.mapping.select_next_item(),
+					-- Add tab support
+					["<S-Tab>"] = cmp.mapping.select_prev_item(),
+					["<Tab>"] = cmp.mapping.select_next_item(),
+					["<C-S-f>"] = cmp.mapping.scroll_docs(-4),
 					["<C-f>"] = cmp.mapping.scroll_docs(4),
-
-					-- Accept ([y]es) the completion.
-					--  This will auto-import if your LSP supports it.
-					--  This will expand snippets if the LSP sent a snippet.
-					["<C-y>"] = cmp.mapping.confirm({ select = true }),
-
-					-- Manually trigger a completion from nvim-cmp.
-					--  Generally you don't need this, because nvim-cmp will display
-					--  completions whenever it has completion options available.
-					["<C-Space>"] = cmp.mapping.complete({}),
-
-					-- Think of <c-l> as moving to the right of your snippet expansion.
-					--  So if you have a snippet that's like:
-					--  function $name($args)
-					--    $body
-					--  end
-					--
-					-- <c-l> will move you to the right of each of the expansion locations.
-					-- <c-h> is similar, except moving you backwards.
-					["<C-l>"] = cmp.mapping(function()
-						if luasnip.expand_or_locally_jumpable() then
-							luasnip.expand_or_jump()
-						end
-					end, { "i", "s" }),
-					["<C-h>"] = cmp.mapping(function()
-						if luasnip.locally_jumpable(-1) then
-							luasnip.jump(-1)
-						end
-					end, { "i", "s" }),
-
-					-- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-					--    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-				}),
+					["<C-Space>"] = cmp.mapping.complete(),
+					["<C-e>"] = cmp.mapping.close(),
+					["<CR>"] = cmp.mapping.confirm({
+						behavior = cmp.ConfirmBehavior.Insert,
+						select = true,
+					}),
+				},
 				sources = {
-					{ name = "nvim_lsp" },
-					{ name = "luasnip" },
-					{ name = "path" },
+					{ name = "path" }, -- file paths
+					{ name = "nvim_lsp", keyword_length = 3 }, -- from language server
+					{ name = "nvim_lsp_signature_help" }, -- display function signatures with current parameter emphasized
+					{ name = "nvim_lua", keyword_length = 2 }, -- complete neovim's Lua runtime API such vim.lsp.*
+					{ name = "buffer", keyword_length = 2 }, -- source current buffer
+					{ name = "vsnip", keyword_length = 2 }, -- nvim-cmp source for vim-vsnip
+					{ name = "calc" }, -- source for math calculation
+				},
+				window = {
+					completion = cmp.config.window.bordered(),
+					documentation = cmp.config.window.bordered(),
+				},
+				formatting = {
+					fields = { "menu", "abbr", "kind" },
+					expandable_indicator = true,
+					format = function(entry, item)
+						local menu_icon = {
+							nvim_lsp = "○",
+							vsnip = "◈",
+							buffer = "◉",
+							path = "‣",
+						}
+						item.menu = menu_icon[entry.source.name]
+						return item
+					end,
 				},
 			})
 		end,
 	},
 	-- Colorscheme
 	{
-		-- "sainnhe/gruvbox-material",
-		"arzg/vim-colors-xcode",
-		priority = 1000, -- Make sure to load this before all the other start plugins.
-		init = function()
-			-- vim.cmd.colorscheme("gruvbox-material")
-			vim.cmd.colorscheme("xcode")
+		"projekt0n/github-nvim-theme",
+		name = "github-theme",
+		lazy = false, -- make sure we load this during startup if it is your main colorscheme
+		priority = 1000, -- make sure to load this before all the other start plugins
+		config = function()
+			require("github-theme").setup({})
 
-			-- You can configure highlights by doing something like:
-			vim.cmd.hi("Comment gui=none")
+			vim.cmd("colorscheme github_dark")
 		end,
 	},
 	-- Highlight todo, notes, etc in comments
@@ -561,6 +585,55 @@ require("lazy").setup({
 
 			--  Check out: https://github.com/echasnovski/mini.nvim
 		end,
+	},
+	-- File explorer
+	{
+		"nvim-tree/nvim-tree.lua",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		config = function()
+			-- Disable netrw (vim's built-in file explorer)
+			vim.g.loaded_netrw = 1
+			vim.g.loaded_netrwPlugin = 1
+
+			require("nvim-tree").setup({
+				view = {
+					width = 35,
+					side = "right",
+				},
+				filters = {
+					dotfiles = false, -- Show hidden files by default
+				},
+				git = {
+					enable = true,
+					ignore = false,
+				},
+				actions = {
+					open_file = {
+						quit_on_open = false,
+					},
+				},
+				renderer = {
+					highlight_git = true,
+					icons = {
+						show = {
+							git = true,
+							folder = true,
+							file = true,
+							folder_arrow = true,
+						},
+					},
+				},
+			})
+
+			-- Key mappings for nvim-tree
+			vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>", { desc = "Toggle file [E]xplorer", silent = true })
+			vim.keymap.set("n", "<leader>ef", ":NvimTreeFocus<CR>", { desc = "[E]xplorer [F]ocus", silent = true })
+		end,
+	},
+	-- Trouble diagnostics
+	{
+		"folke/trouble.nvim",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
 	},
 	{ -- Highlight, edit, and navigate code
 		"nvim-treesitter/nvim-treesitter",
@@ -615,3 +688,4 @@ require("lazy").setup({
 		},
 	},
 })
+
