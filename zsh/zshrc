@@ -12,3 +12,43 @@ export PATH="$PATH:/Users/hans/.risc0/bin"
 # arrow keys with alt-left/right to skip word
 bindkey "^[[1;3C" forward-word
 bindkey "^[[1;3D" backward-word
+
+# better history
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE=~/.zsh_history
+setopt HIST_IGNORE_ALL_DUPS  # Don't record duplicates
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY    # Add commands to history as they are typed
+
+# basic autocomplete
+autoload -Uz compinit
+compinit
+zstyle ':completion:*' menu select  # Arrow key menu selection
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'  # Case insensitive completion
+
+# General shortcuts
+alias ll='ls -lah'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias g='git'
+
+# Git shortcuts
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit -m'
+alias gp='git push'
+alias gl='git pull'
+
+# Add local bin directories to PATH
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/bin:$PATH"
+
+# default editor
+export EDITOR='nvim'
+export VISUAL='nvim'
+
+# auto correct
+setopt CORRECT
+setopt CORRECT_ALL
