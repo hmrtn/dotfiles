@@ -14,8 +14,8 @@ bindkey "^[[1;3C" forward-word
 bindkey "^[[1;3D" backward-word
 
 # better history
-HISTSIZE=10000
-SAVEHIST=10000
+HISTSIZE=1000000
+SAVEHIST=1000000
 HISTFILE=~/.zsh_history
 setopt HIST_IGNORE_ALL_DUPS  # Don't record duplicates
 setopt HIST_SAVE_NO_DUPS
@@ -40,6 +40,7 @@ alias ga='git add'
 alias gc='git commit -m'
 alias gp='git push'
 alias gl='git pull'
+alias gd='git diff'
 
 # Add local bin directories to PATH
 export PATH="$HOME/.local/bin:$PATH"
@@ -49,6 +50,9 @@ export PATH="$HOME/bin:$PATH"
 export EDITOR='nvim'
 export VISUAL='nvim'
 
-# auto correct
-setopt CORRECT
-setopt CORRECT_ALL
+export PATH=$PATH:$(go env GOPATH)/bin
+
+# Use starship
+eval "$(starship init zsh)"
+
+export STARSHIP_CONFIG=$HOME/.config/starship/starship.toml
